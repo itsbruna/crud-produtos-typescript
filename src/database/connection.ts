@@ -25,25 +25,42 @@ export const testConnection = async () => {
 export default pool;
 
 export const setupDatabase = async () => {
-    // 1. Garante que a tabela existe
     try {
-        const createTableQuery = `
-      CREATE TABLE IF NOT EXISTS produtos (
+        // 1. Cria a tabela "usuarios" antes de tudo
+        const createUsersTableQuery = `
+      CREATE TABLE IF NOT EXISTS usuarios (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
-        preco DECIMAL(10, 2) NOT NULL
-      );
-    `;
-        await pool.query(createTableQuery);
-        // 2. Adiciona a coluna (deletado_em) se não existir
-        const addColumnQuery = `
-      ALTER TABLE produtos 
-      ADD COLUMN IF NOT EXISTS deletado_em TIMESTAMP WITH TIME ZONE DEFAULT NULL;
-    `;
-        await pool.query(addColumnQuery);
+        email VARCHAR(255) UNIQUE NOT NULL,
+        senha VARCHAR(255) NOT NULL,
+        criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+        `;
+        await pool.query(createUsersTableQuery);
+        // 2. Garante que a tabela de produtos existe
+        const createProductsTableQuery = `
+        CREATE TABLE IF NOT EXISTS produtos (
+          id SERIAL PRIMARY KEY,
+          nome VARCHAR(255) NOT NULL,
+          preco DECIMAL(10, 2) NOT NULL
+        );
+      `;
+        await pool.query(createProductsTableQuery);
+        // 3. Adiciona a coluna (deletado_em) se não existir
+        const addDeleteColumnQuery = `
+        ALTER TABLE produtos 
+        ADD COLUMN IF NOT EXISTS deletado_em TIMESTAMP WITH TIME ZONE DEFAULT NULL;
+        `;
+        await pool.query(addDeleteColumnQuery);
+        // 4. Cria a relação 1:N entre usuários e produtos
+        const addUserRelationQuery = `
+        ALTER TABLE produtos
+        ADD COLUMN IF NOT EXISTS usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE;
+        `;
+        await pool.query(addUserRelationQuery);
 
-        console.log('Tabela "produtos" e colunas verificadas com sucesso!');
+        console.log('Banco de dados SaaS (Tabelas e Vínculos) verificado com sucesso!');
     } catch (error) {
-        console.error('Erro ao configurar as tabelas:', error);
+        console.error('Erro ao configurar as tabelas do banco de dados:', error);
     }
 };
